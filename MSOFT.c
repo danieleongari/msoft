@@ -15,7 +15,8 @@ int main(int argc, char **argv) {
   FILE *f4=fopen("potential_ad.dat","w");
   FILE *f5=fopen("population.dat","w");
   FILE *f6=fopen("potential_di.dat","w");
-  
+  printf("  completed      norm           etot     pop1    pop2\n") ;
+
   init_param();  /* Initialize input parameters */
   init_prop();   /* Initialize the kinetic & potential propagators */
   init_wavefn(); /* Initialize the electron wave function */
@@ -25,15 +26,19 @@ int main(int argc, char **argv) {
 
   for (step=1; step<=NSTEP; step++) {
     single_step(step); /* Time propagation for one step, DT */
-    if (step%NECAL==0) {
+    if (step==1 || step%NECAL==0) {
       calc_energy();
       print_energy(step,f1);
       pop_states();
       print_pop(step,f5);
     }
-    if (step%NNCAL==0) {
+    if (step==1 || step%NNCAL==0) {
       calc_norm();
       print_wavefn(step,f2,f3);
+    }
+    if (step==1|| step%(NSTEP/10)==0){
+      int progress=step*100/NSTEP;
+      printf("  %3d %%         %6.5f      %8.4f   %5.4f  %5.4f \n", progress, norm, etot,P1,P2) ; 
     }
   }
 
@@ -47,7 +52,7 @@ void init_param() {
   /* Initialize control parameters */
   LX=50.0;
   DT=0.1;
-  NSTEP=80000;
+  NSTEP=40000;
   NECAL=1;
   NNCAL=1000;
 
@@ -65,7 +70,7 @@ void init_prop() {
   
   A=0.01;
   B=1.6;
-  C=0.005;
+  C=0.005;  //SB: 0.005
   D=1.0;  
   M=2000;
 
@@ -119,42 +124,45 @@ void init_wavefn() {
   int sx,s;
   double x,gauss,Csq,norm_fac;
 
-  X0=-5.8;
-  S0=1;
-  P0=10;    //sb: 55
+  X0= 19;
+  S0= 0.5;
+  P0= 10;    //sb: 55
 
   /* Calculate the the wave function value mesh point-by-point */
   for (sx=1; sx<=NX; sx++) {
-    x = -0.5*LX + dx*sx;
-    gauss = exp(-S0*(x-X0)*(x-X0));
-    C1[sx][0] = gauss*cos(P0*(x-X0)); 	/* wf on surface 1 */
-    C1[sx][1] = gauss*sin(P0*(x-X0)); 
+    x = dx*sx;
+    gauss = exp(-(x-X0)*(x-X0)/4.0/(S0*S0));
+    C1[sx][0] = gauss*cos(P0*(x-X0));  	        /* wf on surface 1 */
+    C1[sx][1] = gauss*sin(P0*(x-X0));  
     C2[sx][0] = 0;			/* wf on surface 2 */
     C2[sx][1] = 0;
   }
   
-  /* Normalize C1 */
+  // Normalize C1 if not null 
   Csq=0.0;
   for (sx=1; sx<=NX; sx++)
     for (s=0; s<2; s++)
       Csq += C1[sx][s]*C1[sx][s];
   Csq *= dx;
-  norm_fac = 1.0/sqrt(Csq);
-  for (sx=1; sx<=NX; sx++)
-    for (s=0; s<2; s++)
-      C1[sx][s] *= norm_fac;
-  
-  /* Normalize C2 */
-/*    Csq=0.0;
+  if (Csq >0) {
+   norm_fac = 1.0/sqrt(Csq);
+   for (sx=1; sx<=NX; sx++)
+     for (s=0; s<2; s++)
+       C1[sx][s] *= norm_fac;
+  }
+
+  // Normalize C2 if not null
+    Csq=0.0;
     for (sx=1; sx<=NX; sx++)
     for (s=0; s<2; s++)
     Csq += C2[sx][s]*C2[sx][s];
     Csq *= dx;
-    norm_fac = 1.0/sqrt(Csq);
-    for (sx=1; sx<=NX; sx++)
-      for (s=0; s<2; s++)
-        C2[sx][s] *= norm_fac; */
-
+    if (Csq >0) {
+     norm_fac = 1.0/sqrt(Csq);
+     for (sx=1; sx<=NX; sx++)
+       for (s=0; s<2; s++)
+         C2[sx][s] *= norm_fac;  
+    }
   periodic_bc();
 }
 
@@ -436,6 +444,7 @@ void calc_ekin() {
       k = 2*M_PI*sx/LX;
     else
       k = 2*M_PI*(sx-NX)/LX;
+      //printf("%f\n",k);
   ekin += k*k*(C1[sx][0]*C1[sx][0]+C1[sx][1]*C1[sx][1])*0.5/M +
           k*k*(C2[sx][0]*C2[sx][0]+C2[sx][1]*C2[sx][1])*0.5/M;     //domod "/M" 
   }
@@ -449,8 +458,10 @@ void calc_epot() {
   /* Potential energy */
   epot = 0.0;
   for (sx=1; sx<=NX; sx++) {
-    epot += E[sx][1]*(C1[sx][0]*C1[sx][0]+C1[sx][1]*C1[sx][1])+
-            E[sx][0]*(C2[sx][0]*C2[sx][0]+C2[sx][1]*C2[sx][1]);   //nb1 
+    epot += h[sx][0][0]*(C1[sx][0]*C1[sx][0]+C1[sx][1]*C1[sx][1])-
+            2.0*h[sx][0][1]*(C1[sx][0]*C2[sx][0]+C1[sx][1]*C2[sx][1])+
+            h[sx][1][1]*(C2[sx][0]*C2[sx][0]+C2[sx][1]*C2[sx][1]);   //nb1 
+
   }
   epot *= dx;
 }
@@ -533,8 +544,8 @@ void print_wavefn(int step, FILE *f2, FILE *f3) {
  {
   x=dx*sx;
   fprintf(f2,"%8i %15.10f %15.10f %15.10f\n",sx,x,
-    ((C1[sx][0]*C1[sx][0]+C1[sx][1]*C1[sx][1])/100.0)+E[1][1], // "/100" for visualization purpose  
-    ((C2[sx][0]*C2[sx][0]+C2[sx][1]*C2[sx][1])/100.0)+E[1][0]);  //nb1
+    ((C1[sx][0]*C1[sx][0]+C1[sx][1]*C1[sx][1])/100.0)+h[sx][0][0], // "/100" for visualization purpose  
+    ((C2[sx][0]*C2[sx][0]+C2[sx][1]*C2[sx][1])/100.0)+h[sx][1][1]);  //nb1
  }
 
   if (step>0)
