@@ -52,7 +52,7 @@ void init_param() {
   /* Initialize control parameters */
   LX=50.0;
   DT=0.1;
-  NSTEP=40000;
+  NSTEP=100000;
   NECAL=1;
   NNCAL=1000;
 
@@ -68,11 +68,9 @@ void init_prop() {
   int i;
   double x, k;
   
-  A=0.01;
-  B=1.6;
-  C=0.005;  //SB: 0.005
-  D=1.0;  
+
   M=2000;
+  pot_type=1; 
 
   /* Set up kinetic propagators */
   for (i=0; i<=NX; i++) {
@@ -89,19 +87,42 @@ void init_prop() {
   }
   
   /* Set up potential propagator */
-  for (i=1; i<=NX; i++) {
-    x = -0.5*LX + dx*i;
-    /* Construct the matrix h */
-    h[i][0][0] = A*(1-exp(-B*fabs(x)))*x/fabs(x);
-    h[i][0][1] = C*exp(-D*x*x);
-    h[i][1][0] = h[i][0][1];
-    h[i][1][1] = -h[i][0][0];
-    if(i==NX/2) {
-      h[i][0][0] = 0;
-      h[i][0][1] = C;
-      h[i][1][0] = C;
-      h[i][1][1] = 0;
-    }
+  if (pot_type==1) {         // exp up 6 exp down
+
+     A=0.01;
+     B=1.6;
+     C=0.005;  //SB: 0.005
+     D=1.0;  
+
+     for (i=1; i<=NX; i++) {
+      x = -0.5*LX + dx*i;
+      h[i][0][0] = A*(1-exp(-B*fabs(x)))*x/fabs(x);
+      h[i][0][1] = C*exp(-D*x*x);
+      h[i][1][0] = h[i][0][1];
+      h[i][1][1] = -h[i][0][0];
+      if(i==NX/2) {
+       h[i][0][0] = 0;
+       h[i][0][1] = C;
+       h[i][1][0] = C;
+       h[i][1][1] = 0; 
+      }                 
+     }
+  }
+  else if (pot_type==2) {     //double harmonic  
+     A=0.001;
+     B=20;
+     C=30;
+     D=1.0; 
+
+     for (i=1; i<=NX; i++) {
+      x = i*dx;
+      h[i][0][0] = A*(x-B)*(x-B);
+      h[i][0][1] = C*exp(-D*(x-0.5*LX)*(x-0.5*LX));
+      h[i][1][0] = h[i][0][1];
+      h[i][1][1] = A*(x-C)*(x-C);
+     }
+   }   //end definition of potentials 
+
     /* calc eigenvalues of h */
     calc_eigenvalues(i);
     /* calc De and Det */
@@ -113,7 +134,6 @@ void init_prop() {
     /* 2nd component */
     u[i][1][0] = cos(-0.5*DT*E[i][1]);
     u[i][1][1] = sin(-0.5*DT*E[i][1]);
-  }
 }
 
 /*----------------------------------------------------------------------------*/
@@ -124,9 +144,9 @@ void init_wavefn() {
   int sx,s;
   double x,gauss,Csq,norm_fac;
 
-  X0= 19;
-  S0= 0.5;
-  P0= 10;    //sb: 55
+  X0= 17;
+  S0= 1.0;    //sb:0.5
+  P0= 20;   //sb: 55, do:10
 
   /* Calculate the the wave function value mesh point-by-point */
   for (sx=1; sx<=NX; sx++) {
@@ -544,8 +564,8 @@ void print_wavefn(int step, FILE *f2, FILE *f3) {
  {
   x=dx*sx;
   fprintf(f2,"%8i %15.10f %15.10f %15.10f\n",sx,x,
-    ((C1[sx][0]*C1[sx][0]+C1[sx][1]*C1[sx][1])/100.0)+h[sx][0][0], // "/100" for visualization purpose  
-    ((C2[sx][0]*C2[sx][0]+C2[sx][1]*C2[sx][1])/100.0)+h[sx][1][1]);  //nb1
+    ((C1[sx][0]*C1[sx][0]+C1[sx][1]*C1[sx][1]))+h[sx][0][0],  
+    ((C2[sx][0]*C2[sx][0]+C2[sx][1]*C2[sx][1]))+h[sx][1][1]);  
  }
 
   if (step>0)
