@@ -1,9 +1,10 @@
+/*******************************************************************************
+Quantum dynamics (QD) simulation, MSOFT algorithm.
+*******************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include "MSOFT.h"
-
-
 
 int main(int argc, char **argv) {
 
@@ -56,8 +57,7 @@ void init_param() {
   NECAL=1;
   NNCAL=1000;
 
-  /* Calculate the mesh size */
-  dx = LX/NX;
+  dx = LX/NX; /* Calculate the mesh size */
 }
 
 /*----------------------------------------------------------------------------*/
@@ -65,75 +65,77 @@ void init_prop() {
 /*------------------------------------------------------------------------------
   Initializes the kinetic & potential propagators.
 ------------------------------------------------------------------------------*/
-  int i;
+  int sx;
   double x, k;
   
-
   M=2000;
-  pot_type=1; 
+  pot_type=2;
 
   /* Set up kinetic propagators */
-  for (i=0; i<=NX; i++) {
-    if (i < NX/2)
-      k = 2*M_PI*i/LX;
+  for (sx=0; sx<=NX; sx++) {
+    if (sx < NX/2)
+      k = 2*M_PI*sx/LX;
     else
-      k = 2*M_PI*(i-NX)/LX;
+      k = 2*M_PI*(sx-NX)/LX;
     
     /* kinetic operator */ 
-    T[i] = k*k*0.5/M;
+    T[sx] = k*k*0.5/M;
     /* kinetic propagator */
-    t[i][0] = cos(-DT*T[i]);
-    t[i][1] = sin(-DT*T[i]);
+    t[sx][0] = cos(-DT*T[sx]);
+    t[sx][1] = sin(-DT*T[sx]);
   }
   
   /* Set up potential propagator */
-  if (pot_type==1) {         // exp up 6 exp down
+  if (pot_type==1) {         // exp up & exp down
 
      A=0.01;
      B=1.6;
      C=0.005;  //SB: 0.005
      D=1.0;  
 
-     for (i=1; i<=NX; i++) {
-      x = -0.5*LX + dx*i;
-      h[i][0][0] = A*(1-exp(-B*fabs(x)))*x/fabs(x);
-      h[i][0][1] = C*exp(-D*x*x);
-      h[i][1][0] = h[i][0][1];
-      h[i][1][1] = -h[i][0][0];
-      if(i==NX/2) {
-       h[i][0][0] = 0;
-       h[i][0][1] = C;
-       h[i][1][0] = C;
-       h[i][1][1] = 0; 
+     for (sx=1; sx<=NX; sx++) {
+      x = -0.5*LX + dx*sx;
+      h[sx][0][0] = A*(1-exp(-B*fabs(x)))*x/fabs(x);
+      h[sx][0][1] = C*exp(-D*x*x);
+      h[sx][1][0] = h[sx][0][1];
+      h[sx][1][1] = -h[sx][0][0];
+      if(sx==NX/2) {
+       h[sx][0][0] = 0;
+       h[sx][0][1] = C;
+       h[sx][1][0] = C;
+       h[sx][1][1] = 0; 
       }                 
      }
   }
   else if (pot_type==2) {     //double harmonic  
      A=0.001;
      B=20;
-     C=30;
+     b=30;
+     C=0.005;
      D=1.0; 
 
-     for (i=1; i<=NX; i++) {
-      x = i*dx;
-      h[i][0][0] = A*(x-B)*(x-B);
-      h[i][0][1] = C*exp(-D*(x-0.5*LX)*(x-0.5*LX));
-      h[i][1][0] = h[i][0][1];
-      h[i][1][1] = A*(x-C)*(x-C);
+     for (sx=1; sx<=NX; sx++) {
+      x = sx*dx;
+      h[sx][0][0] = A*(x-B)*(x-B);
+      h[sx][0][1] = C*exp(-D*(x-0.5*LX)*(x-0.5*LX));
+      h[sx][1][0] = h[sx][0][1];
+      h[sx][1][1] = A*(x-b)*(x-b);
      }
-   }   //end definition of potentials 
+  }   //end definition of potentials 
 
+  for (sx=1; sx<=NX; sx++) {
     /* calc eigenvalues of h */
-    calc_eigenvalues(i);
+    calc_eigenvalues(sx);
     /* calc De and Det */
-    calc_De_and_Det(i); 
+    calc_De_and_Det(sx); 
     /* Half-step diagonal propagator */
     /* 1st component */
-    u[i][0][0] = cos(-0.5*DT*E[i][0]);
-    u[i][0][1] = sin(-0.5*DT*E[i][0]);
+    u[sx][0][0] = cos(-0.5*DT*E[sx][0]);
+    u[sx][0][1] = sin(-0.5*DT*E[sx][0]);
     /* 2nd component */
-    u[i][1][0] = cos(-0.5*DT*E[i][1]);
-    u[i][1][1] = sin(-0.5*DT*E[i][1]);
+    u[sx][1][0] = cos(-0.5*DT*E[sx][1]);
+    u[sx][1][1] = sin(-0.5*DT*E[sx][1]);
+  }
 }
 
 /*----------------------------------------------------------------------------*/
@@ -144,7 +146,7 @@ void init_wavefn() {
   int sx,s;
   double x,gauss,Csq,norm_fac;
 
-  X0= 17;
+  X0= 19;
   S0= 1.0;    //sb:0.5
   P0= 20;   //sb: 55, do:10
 
@@ -167,7 +169,7 @@ void init_wavefn() {
   if (Csq >0) {
    norm_fac = 1.0/sqrt(Csq);
    for (sx=1; sx<=NX; sx++)
-     for (s=0; s<2; s++)
+     for (s=0; s<2; s++) 
        C1[sx][s] *= norm_fac;
   }
 
@@ -564,8 +566,8 @@ void print_wavefn(int step, FILE *f2, FILE *f3) {
  {
   x=dx*sx;
   fprintf(f2,"%8i %15.10f %15.10f %15.10f\n",sx,x,
-    ((C1[sx][0]*C1[sx][0]+C1[sx][1]*C1[sx][1]))+h[sx][0][0],  
-    ((C2[sx][0]*C2[sx][0]+C2[sx][1]*C2[sx][1]))+h[sx][1][1]);  
+    ((C1[sx][0]*C1[sx][0]+C1[sx][1]*C1[sx][1])/10)+h[sx][0][0],   // "/100" for visualization purpose  
+    ((C2[sx][0]*C2[sx][0]+C2[sx][1]*C2[sx][1])/10)+h[sx][1][1]);
  }
 
   if (step>0)

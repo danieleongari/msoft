@@ -1,14 +1,14 @@
 set terminal wxt
 set xlabel "X"
 #set yrange [-0.015:0.015] 
-#set yrange [0:0.1] 
+set yrange [0:0.1] 
 
   p "potential_ad.dat" u 2:3 w l lc 1 ti "V_ad(x)", "potential_ad.dat" u 2:4 w l lc 1 notitle,\
     "potential_di.dat" u 2:3 w l lc 2 ti "V_di(x)", "potential_di.dat" u 2:4 w l lc 2 notitle 
 
 pause 1
 
-do for [ii=1:100]{ 
+do for [ii=0:900]{ 
   p "potential_ad.dat" u 2:3 w l lc 1 ti "V_ad(x)", "potential_ad.dat" u 2:4 w l lc 1 notitle,\
     "potential_di.dat" u 2:3 w l lc 2 ti "V_di(x)", "potential_di.dat" u 2:4 w l lc 2 notitle,\
     "psisq.dat" i ii u 2:($3+0.0003) w l ls 3 lc rgb 'blue' notitle,\

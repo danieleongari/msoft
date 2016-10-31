@@ -40,7 +40,7 @@ int NECAL;       /* Interval to calculate energies */
 int NNCAL;       /* Interval to calculate norm     */
 int pot_type;    /* Potential type */
 double X0,S0,P0; /* Center-of-mass, spread & momentum of initial wave packet */
-double A,B,C,D;  /* Parameters of potential */
+double A,B,b,C,D;  /* Parameters of potential */
 
 /* Arrays **********************************************************************
 C1[NX+2][2]:     C1[i][0|1] is the real|imaginary part of the first component of the 
