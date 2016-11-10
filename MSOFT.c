@@ -53,7 +53,7 @@ void init_param() {
   /* Initialize control parameters */
   LX=50.0;
   DT=0.1;
-  NSTEP=100000;
+  NSTEP=10000;
   NECAL=1;
   NNCAL=1000;
 
@@ -69,7 +69,7 @@ void init_prop() {
   double x, k;
   
   M=2000;
-  pot_type=2;
+  pot_type=1;
 
   /* Set up kinetic propagators */
   for (sx=0; sx<=NX; sx++) {
@@ -418,8 +418,6 @@ void single_step(int step) {
   update_C2();
   /* step kinetic propagation   */
   kin_prop(); 
-  if (step%NECAL==0)
-    calc_ekin();
   /* fft^(-1) */
   /* 1st component */
   create_C1f();
@@ -432,7 +430,28 @@ void single_step(int step) {
   /* half step potential propagation */
   pot_prop();  
   if (step%NECAL==0)		
-    calc_epot();	
+    calc_epot();	     //compute the potential energy from psi
+
+    create_C1f();            //compute the kinetic energy from the fourier transform of psi
+    four1(Cf, (unsigned long) NX, -1); 
+    for (j=0; j <= 2*(NX+1); j++) 
+      Cf[j] /= NX;
+    update_C1();
+    create_C2f();
+    four1(Cf, (unsigned long) NX, -1);
+    for (j=0; j <= 2*(NX+1); j++) 
+      Cf[j] /= NX;
+    update_C2();
+    calc_ekin();
+    create_C1f();
+    four1(Cf, (unsigned long) NX, 1);
+    update_C1();
+    create_C2f();
+    four1(Cf, (unsigned long) NX, 1);
+    update_C2();
+
+
+
 }
 
 /*----------------------------------------------------------------------------*/
