@@ -1,8 +1,9 @@
 /*******************************************************************************
 File MSOFT.h is a header file for program MSOFT.c.
 *******************************************************************************/
-#define NX 1024   /* Number of mesh points */
+#define NX 512   /* Number of mesh points */
 #define SWAP(a,b) tempr=(a);(a)=(b);(b)=tempr
+
 
 /* Function prototypes ********************************************************/
 void init_param();
@@ -60,16 +61,16 @@ Det[NX+2][2][2]: Det[i][j][k] is the element j,k of the matrix Det, which is the
 		 transposed of De, at mesh point i
 
 *******************************************************************************/
-double C1[NX+2][2];
-double C2[NX+2][2];
-double Cf[(NX+2)*2];
-double T[NX+2];
-double t[NX+2][2];
-double u[NX+2][2][2];
-double h[NX+2][2][2];
-double E[NX+2][2];
-double De[NX+2][2][2];
-double Det[NX+2][2][2];
+double C1[NX+1][2];
+double C2[NX+1][2];
+double Cf[(NX+1)*2];
+double T[NX+1];
+double t[NX+1][2];
+double u[NX+1][2][2];
+double h[NX+1][2][2];
+double E[NX+1][2];
+double De[NX+1][2][2];
+double Det[NX+1][2][2];
 
 /* Variables *******************************************************************
 dx   = Mesh spacing

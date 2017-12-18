@@ -53,7 +53,7 @@ void init_param() {
   /* Initialize control parameters */
   LX=50.0;
   DT=0.1;
-  NSTEP=10000;
+  NSTEP=50000;
   NECAL=1;
   NNCAL=1000;
 
@@ -69,10 +69,10 @@ void init_prop() {
   double x, k;
   
   M=2000;
-  pot_type=1;
+  pot_type=2;
 
   /* Set up kinetic propagators */
-  for (sx=0; sx<=NX; sx++) {
+  for (sx=0; sx<NX; sx++) {
     if (sx < NX/2)
       k = 2*M_PI*sx/LX;
     else
@@ -93,7 +93,7 @@ void init_prop() {
      C=0.005;  //SB: 0.005
      D=1.0;  
 
-     for (sx=1; sx<=NX; sx++) {
+     for (sx=0; sx<=NX; sx++) {
       x = -0.5*LX + dx*sx;
       h[sx][0][0] = A*(1-exp(-B*fabs(x)))*x/fabs(x);
       h[sx][0][1] = C*exp(-D*x*x);
@@ -114,7 +114,7 @@ void init_prop() {
      C=0.005;
      D=1.0; 
 
-     for (sx=1; sx<=NX; sx++) {
+     for (sx=0; sx<=NX; sx++) {
       x = sx*dx;
       h[sx][0][0] = A*(x-B)*(x-B);
       h[sx][0][1] = C*exp(-D*(x-0.5*LX)*(x-0.5*LX));
@@ -123,7 +123,7 @@ void init_prop() {
      }
   }   //end definition of potentials 
 
-  for (sx=1; sx<=NX; sx++) {
+  for (sx=0; sx<=NX; sx++) {
     /* calc eigenvalues of h */
     calc_eigenvalues(sx);
     /* calc De and Det */
@@ -151,7 +151,7 @@ void init_wavefn() {
   P0= 20;   //sb: 55, do:10
 
   /* Calculate the the wave function value mesh point-by-point */
-  for (sx=1; sx<=NX; sx++) {
+  for (sx=0; sx<NX; sx++) {
     x = dx*sx;
     gauss = exp(-(x-X0)*(x-X0)/4.0/(S0*S0));
     C1[sx][0] = gauss*cos(P0*(x-X0));  	        /* wf on surface 1 */
@@ -162,26 +162,26 @@ void init_wavefn() {
   
   // Normalize C1 if not null 
   Csq=0.0;
-  for (sx=1; sx<=NX; sx++)
+  for (sx=0; sx<NX; sx++)
     for (s=0; s<2; s++)
       Csq += C1[sx][s]*C1[sx][s];
   Csq *= dx;
   if (Csq >0) {
    norm_fac = 1.0/sqrt(Csq);
-   for (sx=1; sx<=NX; sx++)
+   for (sx=0; sx<NX; sx++)
      for (s=0; s<2; s++) 
        C1[sx][s] *= norm_fac;
   }
 
   // Normalize C2 if not null
     Csq=0.0;
-    for (sx=1; sx<=NX; sx++)
+    for (sx=0; sx<NX; sx++)
     for (s=0; s<2; s++)
     Csq += C2[sx][s]*C2[sx][s];
     Csq *= dx;
     if (Csq >0) {
      norm_fac = 1.0/sqrt(Csq);
-     for (sx=1; sx<=NX; sx++)
+     for (sx=0; sx<NX; sx++)
        for (s=0; s<2; s++)
          C2[sx][s] *= norm_fac;  
     }
@@ -197,12 +197,15 @@ void periodic_bc() {
   int s;
 
   /* Copy boundary wave function values */
-  for (s=0; s<=1; s++) {
-    C1[0][s] = C1[NX][s];
-    C1[NX+1][s] = C1[1][s];
-    C2[0][s] = C2[NX][s];
-    C2[NX+1][s] = C2[1][s];
-  }
+    C1[NX][0] = C1[0][0];
+    C1[NX][1] = C1[0][1];
+    C2[NX][0] = C2[0][0];
+    C2[NX][1] = C2[0][1];
+
+    //C1[0][s] = C1[NX][s];
+    //C1[NX+1][s] = C1[1][s];
+    //C2[0][s] = C2[NX][s];
+    //C2[NX+1][s] = C2[1][s];
 }
 
 /*----------------------------------------------------------------------------*/
@@ -262,33 +265,33 @@ checked for!).
 /*----------------------------------------------------------------------------*/
 void create_C1f() {
   int sx;
-  for (sx=1; sx <= NX+1; sx++) {
-    Cf[2*sx-1] = C1[sx-1][0];
-    Cf[2*sx] = C1[sx-1][1];
+  for (sx=0; sx <= NX; sx++) {
+    Cf[2*sx+1] = C1[sx][0];
+    Cf[2*sx+2] = C1[sx][1];
   }
 }
 /*----------------------------------------------------------------------------*/
 void create_C2f() {
   int sx;
-  for (sx=1; sx <= NX+1; sx++) {
-    Cf[2*sx-1] = C2[sx-1][0];
-    Cf[2*sx] = C2[sx-1][1];
+  for (sx=0; sx <= NX; sx++) {
+    Cf[2*sx+1] = C2[sx][0];
+    Cf[2*sx+2] = C2[sx][1];
   }
 }
 /*----------------------------------------------------------------------------*/
 void update_C1() {
   int sx;
-  for (sx=1; sx <= NX+1; sx++) {
-    C1[sx-1][0] = Cf[2*sx-1];
-    C1[sx-1][1] = Cf[2*sx];
+  for (sx=0; sx <= NX; sx++) {
+    C1[sx][0] = Cf[2*sx+1];
+    C1[sx][1] = Cf[2*sx+2];
   }
 }
 /*----------------------------------------------------------------------------*/
 void update_C2() {
   int sx;
-  for (sx=1; sx <= NX+1; sx++) {
-    C2[sx-1][0] = Cf[2*sx-1];
-    C2[sx-1][1] = Cf[2*sx];
+  for (sx=0; sx <= NX; sx++) {
+    C2[sx][0] = Cf[2*sx+1];
+    C2[sx][1] = Cf[2*sx+2];
   }
 }
 /*----------------------------------------------------------------------------*/
@@ -339,7 +342,7 @@ void pot_prop() {
   int sx;
   double wr1,wi1,wr2,wi2;
 
-  for (sx=1; sx<=NX; sx++) {
+  for (sx=0; sx<NX; sx++) {
     /* De<r|psi> */
     wr1=De[sx][0][0]*C1[sx][0]+De[sx][0][1]*C2[sx][0];
     wi1=De[sx][0][0]*C1[sx][1]+De[sx][0][1]*C2[sx][1];
@@ -381,7 +384,7 @@ void kin_prop() {
   int sx,s;
   double wr,wi;
   
-  for (sx=1; sx<=NX; sx++) {
+  for (sx=0; sx<NX; sx++) {
     /* 1st component C1 */
     wr=t[sx][0]*C1[sx][0]-t[sx][1]*C1[sx][1];
     wi=t[sx][0]*C1[sx][1]+t[sx][1]*C1[sx][0];
@@ -456,12 +459,12 @@ void single_step(int step) {
 
 /*----------------------------------------------------------------------------*/
 void pop_states() {
-  int i;
+  int sx;
   P1=0.0;
   P2=0.0;
-  for (i=1; i<=NX;i++) {
-    P1 += C1[i][0]*C1[i][0]+C1[i][1]*C1[i][1];
-    P2 += C2[i][0]*C2[i][0]+C2[i][1]*C2[i][1];
+  for (sx=0; sx<NX; sx++) {
+    P1 += C1[sx][0]*C1[sx][0]+C1[sx][1]*C1[sx][1];
+    P2 += C2[sx][0]*C2[sx][0]+C2[sx][1]*C2[sx][1];
   }
   P1 *= dx;
   P2 *= dx;
@@ -480,7 +483,7 @@ void calc_ekin() {
   double k;
   /* kinetic energy */
   ekin = 0.0;
-  for (sx=1; sx<=NX; sx++) {
+  for (sx=0; sx<NX; sx++) {
     if (sx < NX/2)
       k = 2*M_PI*sx/LX;
     else
@@ -498,7 +501,7 @@ void calc_epot() {
   int sx;
   /* Potential energy */
   epot = 0.0;
-  for (sx=1; sx<=NX; sx++) {
+  for (sx=0; sx<NX; sx++) {
     epot += h[sx][0][0]*(C1[sx][0]*C1[sx][0]+C1[sx][1]*C1[sx][1])-
             2.0*h[sx][0][1]*(C1[sx][0]*C2[sx][0]+C1[sx][1]*C2[sx][1])+
             h[sx][1][1]*(C2[sx][0]*C2[sx][0]+C2[sx][1]*C2[sx][1]);   //nb1 
@@ -542,7 +545,7 @@ void print_pot_di(FILE *f6) {
   int i;
   double x;
 
-  for (i=1; i<=NX; i++) {
+  for (i=0; i<=NX; i++) {
     x = dx*i;
     fprintf(f6,"%8i %15.10f %15.10f %15.10f %15.10f %15.10f\n"
                 ,i,x,h[i][0][0],h[i][1][1],h[i][0][1],h[i][1][0]);
@@ -559,7 +562,7 @@ void calc_norm() {
 
  norm=0.0;
 
- for (sx=1; sx<=NX; sx++)                              // domod from 1 to NX (not NX+1) 
+ for (sx=0; sx<NX; sx++)                               
  {
   psisq=C1[sx][0]*C1[sx][0]+C1[sx][1]*C1[sx][1]+
         C2[sx][0]*C2[sx][0]+C2[sx][1]*C2[sx][1];
@@ -581,7 +584,7 @@ void print_wavefn(int step, FILE *f2, FILE *f3) {
 
  fprintf(f2,"\n"); 
  fprintf(f2,"\n"); 
- for (sx=1; sx<=NX; sx++)
+ for (sx=0; sx<NX; sx++)
  {
   x=dx*sx;
   fprintf(f2,"%8i %15.10f %15.10f %15.10f\n",sx,x,
