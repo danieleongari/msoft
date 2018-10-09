@@ -39,7 +39,7 @@ int main(int argc, char **argv) {
     }
     if (step==1|| step%(NSTEP/10)==0){
       int progress=step*100/NSTEP;
-      printf("  %3d %%         %6.5f      %8.4f   %5.4f  %5.4f \n", progress, norm, etot,P1,P2) ; 
+      printf("  %3d %%         %6.5f      %8.4f   %5.4f  %5.4f \n", progress, norm, etot,P1,P2) ;
     }
   }
 
@@ -53,7 +53,7 @@ void init_param() {
   /* Initialize control parameters */
   LX=50.0;
   DT=0.1;
-  NSTEP=50000;
+  NSTEP=100000;
   NECAL=1;
   NNCAL=1000;
 
@@ -67,7 +67,7 @@ void init_prop() {
 ------------------------------------------------------------------------------*/
   int sx;
   double x, k;
-  
+
   M=2000;
   pot_type=2;
 
@@ -77,21 +77,21 @@ void init_prop() {
       k = 2*M_PI*sx/LX;
     else
       k = 2*M_PI*(sx-NX)/LX;
-    
-    /* kinetic operator */ 
+
+    /* kinetic operator */
     T[sx] = k*k*0.5/M;
     /* kinetic propagator */
     t[sx][0] = cos(-DT*T[sx]);
     t[sx][1] = sin(-DT*T[sx]);
   }
-  
+
   /* Set up potential propagator */
   if (pot_type==1) {         // exp up & exp down
 
      A=0.01;
      B=1.6;
      C=0.005;  //SB: 0.005
-     D=1.0;  
+     D=1.0;
 
      for (sx=0; sx<=NX; sx++) {
       x = -0.5*LX + dx*sx;
@@ -103,16 +103,16 @@ void init_prop() {
        h[sx][0][0] = 0;
        h[sx][0][1] = C;
        h[sx][1][0] = C;
-       h[sx][1][1] = 0; 
-      }                 
+       h[sx][1][1] = 0;
+      }
      }
   }
-  else if (pot_type==2) {     //double harmonic  
+  else if (pot_type==2) {     //double harmonic
      A=0.001;
      B=20;
      b=30;
      C=0.005;
-     D=1.0; 
+     D=1.0;
 
      for (sx=0; sx<=NX; sx++) {
       x = sx*dx;
@@ -121,13 +121,13 @@ void init_prop() {
       h[sx][1][0] = h[sx][0][1];
       h[sx][1][1] = A*(x-b)*(x-b);
      }
-  }   //end definition of potentials 
+  }   //end definition of potentials
 
   for (sx=0; sx<=NX; sx++) {
     /* calc eigenvalues of h */
     calc_eigenvalues(sx);
     /* calc De and Det */
-    calc_De_and_Det(sx); 
+    calc_De_and_Det(sx);
     /* Half-step diagonal propagator */
     /* 1st component */
     u[sx][0][0] = cos(-0.5*DT*E[sx][0]);
@@ -155,12 +155,12 @@ void init_wavefn() {
     x = dx*sx;
     gauss = exp(-(x-X0)*(x-X0)/4.0/(S0*S0));
     C1[sx][0] = gauss*cos(P0*(x-X0));  	        /* wf on surface 1 */
-    C1[sx][1] = gauss*sin(P0*(x-X0));  
+    C1[sx][1] = gauss*sin(P0*(x-X0));
     C2[sx][0] = 0;			/* wf on surface 2 */
     C2[sx][1] = 0;
   }
-  
-  // Normalize C1 if not null 
+
+  // Normalize C1 if not null
   Csq=0.0;
   for (sx=0; sx<NX; sx++)
     for (s=0; s<2; s++)
@@ -169,7 +169,7 @@ void init_wavefn() {
   if (Csq >0) {
    norm_fac = 1.0/sqrt(Csq);
    for (sx=0; sx<NX; sx++)
-     for (s=0; s<2; s++) 
+     for (s=0; s<2; s++)
        C1[sx][s] *= norm_fac;
   }
 
@@ -183,7 +183,7 @@ void init_wavefn() {
      norm_fac = 1.0/sqrt(Csq);
      for (sx=0; sx<NX; sx++)
        for (s=0; s<2; s++)
-         C2[sx][s] *= norm_fac;  
+         C2[sx][s] *= norm_fac;
     }
   periodic_bc();
 }
@@ -230,13 +230,13 @@ checked for!).
       SWAP(data[j+1],data[i+1]);
     }
     m=nn;
-    while (m >= 2 && j > m) { 
+    while (m >= 2 && j > m) {
       j -= m;
       m >>= 1;
     }
     j += m;
   }
-  
+
   mmax=2;
   while (n > mmax) { /* Outer loop executed log2 nn times. */
     istep=mmax << 1;
@@ -314,8 +314,8 @@ void calc_De_and_Det(int i) {
     De[i][0][0] /= norm_fac;
     De[i][1][0] /= norm_fac;
     /* 2nd column = 2nd eigenvector */
-    De[i][0][1] = -De[i][1][0];	
-    De[i][1][1] = De[i][0][0];		
+    De[i][0][1] = -De[i][1][0];
+    De[i][1][1] = De[i][0][0];
   }
   else {
     /* 2nd column = 2nd eigenvector */
@@ -325,8 +325,8 @@ void calc_De_and_Det(int i) {
     De[i][0][1] /= norm_fac;
     De[i][1][1] /= norm_fac;
     /* 1st column = 1st eigenvector */
-    De[i][1][0] = -De[i][0][1];	
-    De[i][0][0] = De[i][1][1];		
+    De[i][1][0] = -De[i][0][1];
+    De[i][0][0] = De[i][1][1];
   }
   Det[i][0][0] = De[i][0][0];
   Det[i][1][1] = De[i][1][1];
@@ -359,7 +359,7 @@ void pot_prop() {
     /* 2nd component */
     wr2=u[sx][1][0]*C2[sx][0]-u[sx][1][1]*C2[sx][1];
     wi2=u[sx][1][0]*C2[sx][1]+u[sx][1][1]*C2[sx][0];
-    
+
     C1[sx][0]=wr1;
     C1[sx][1]=wi1;
     C2[sx][0]=wr2;
@@ -383,7 +383,7 @@ void kin_prop() {
 -------------------------------------------------------------------------------*/
   int sx,s;
   double wr,wi;
-  
+
   for (sx=0; sx<NX; sx++) {
     /* 1st component C1 */
     wr=t[sx][0]*C1[sx][0]-t[sx][1]*C1[sx][1];
@@ -395,7 +395,7 @@ void kin_prop() {
     wi=t[sx][0]*C2[sx][1]+t[sx][1]*C2[sx][0];
     C2[sx][0]=wr;
     C2[sx][1]=wi;
-  }	
+  }
 }
 /*----------------------------------------------------------------------------*/
 void single_step(int step) {
@@ -403,24 +403,24 @@ void single_step(int step) {
   Propagates the wave function for a unit time step, DT.
 ------------------------------------------------------------------------------*/
   int j;
-	
+
   /* half step potential propagation */
-  pot_prop();  
-  /* fft of the 2 components of <r|psi> */	
-  /* 1st component */	
+  pot_prop();
+  /* fft of the 2 components of <r|psi> */
+  /* 1st component */
   create_C1f();
   four1(Cf, (unsigned long) NX, -1);
-  for (j=0; j <= 2*(NX+1); j++) 
+  for (j=0; j <= 2*(NX+1); j++)
     Cf[j] /= NX;
   update_C1();
-  /* 2nd component */	
+  /* 2nd component */
   create_C2f();
   four1(Cf, (unsigned long) NX, -1);
-  for (j=0; j <= 2*(NX+1); j++) 
+  for (j=0; j <= 2*(NX+1); j++)
     Cf[j] /= NX;
   update_C2();
   /* step kinetic propagation   */
-  kin_prop(); 
+  kin_prop();
   /* fft^(-1) */
   /* 1st component */
   create_C1f();
@@ -431,18 +431,18 @@ void single_step(int step) {
   four1(Cf, (unsigned long) NX, 1);
   update_C2();
   /* half step potential propagation */
-  pot_prop();  
-  if (step%NECAL==0)		
+  pot_prop();
+  if (step%NECAL==0)
     calc_epot();	     //compute the potential energy from psi
 
     create_C1f();            //compute the kinetic energy from the fourier transform of psi
-    four1(Cf, (unsigned long) NX, -1); 
-    for (j=0; j <= 2*(NX+1); j++) 
+    four1(Cf, (unsigned long) NX, -1);
+    for (j=0; j <= 2*(NX+1); j++)
       Cf[j] /= NX;
     update_C1();
     create_C2f();
     four1(Cf, (unsigned long) NX, -1);
-    for (j=0; j <= 2*(NX+1); j++) 
+    for (j=0; j <= 2*(NX+1); j++)
       Cf[j] /= NX;
     update_C2();
     calc_ekin();
@@ -475,8 +475,8 @@ void print_pop(int step, FILE *f5) {
   int i;
 
     fprintf(f5,"%8i %15.10f %15.10f\n",step,P1,P2);
-} 
-      
+}
+
 /*----------------------------------------------------------------------------*/
 void calc_ekin() {
   int sx;
@@ -490,7 +490,7 @@ void calc_ekin() {
       k = 2*M_PI*(sx-NX)/LX;
       //printf("%f\n",k);
   ekin += k*k*(C1[sx][0]*C1[sx][0]+C1[sx][1]*C1[sx][1])*0.5/M +
-          k*k*(C2[sx][0]*C2[sx][0]+C2[sx][1]*C2[sx][1])*0.5/M;     //domod "/M" 
+          k*k*(C2[sx][0]*C2[sx][0]+C2[sx][1]*C2[sx][1])*0.5/M;     //domod "/M"
   }
   ekin *= dx;
   ekin *= NX;
@@ -504,7 +504,7 @@ void calc_epot() {
   for (sx=0; sx<NX; sx++) {
     epot += h[sx][0][0]*(C1[sx][0]*C1[sx][0]+C1[sx][1]*C1[sx][1])-
             2.0*h[sx][0][1]*(C1[sx][0]*C2[sx][0]+C1[sx][1]*C2[sx][1])+
-            h[sx][1][1]*(C2[sx][0]*C2[sx][0]+C2[sx][1]*C2[sx][1]);   //nb1 
+            h[sx][1][1]*(C2[sx][0]*C2[sx][0]+C2[sx][1]*C2[sx][1]);   //nb1
 
   }
   epot *= dx;
@@ -521,16 +521,16 @@ void print_energy(int step, FILE *f1) {
 /*------------------------------------------------------------------------------
   Print energy values in file energy.dat
 -------------------------------------------------------------------------------*/
-  
- fprintf(f1, "%8i %15.10f %15.10f %15.10f\n", step,ekin,epot,etot); 
-  
+
+ fprintf(f1, "%8i %15.10f %15.10f %15.10f\n", step,ekin,epot,etot);
+
 }
 /*-------------------------------------------------------------------------------
   Print the potential
 -------------------------------------------------------------------------------*/
 
 void print_pot_ad(FILE *f4) {
-  
+
   int i;
   double x;
 
@@ -541,7 +541,7 @@ void print_pot_ad(FILE *f4) {
 }
 /*-------------------------------------------------------------------------------*/
 void print_pot_di(FILE *f6) {
-  
+
   int i;
   double x;
 
@@ -554,15 +554,15 @@ void print_pot_di(FILE *f6) {
 /*-------------------------------------------------------------------------------*/
 void calc_norm() {
 /*------------------------------------------------------------------------------
-  Calculate the norm                        
+  Calculate the norm
 -------------------------------------------------------------------------------*/
-  
+
  int sx;
  double psisq,psisq2;
 
  norm=0.0;
 
- for (sx=0; sx<NX; sx++)                               
+ for (sx=0; sx<NX; sx++)
  {
   psisq=C1[sx][0]*C1[sx][0]+C1[sx][1]*C1[sx][1]+
         C2[sx][0]*C2[sx][0]+C2[sx][1]*C2[sx][1];
@@ -578,17 +578,17 @@ void print_wavefn(int step, FILE *f2, FILE *f3) {
 /*------------------------------------------------------------------------------
   Print energy values in file energy.dat
 -------------------------------------------------------------------------------*/
-  
+
  int sx;
  double x;
 
- fprintf(f2,"\n"); 
- fprintf(f2,"\n"); 
+ fprintf(f2,"\n");
+ fprintf(f2,"\n");
  for (sx=0; sx<NX; sx++)
  {
   x=dx*sx;
   fprintf(f2,"%8i %15.10f %15.10f %15.10f\n",sx,x,
-    ((C1[sx][0]*C1[sx][0]+C1[sx][1]*C1[sx][1])/10)+h[sx][0][0],   // "/100" for visualization purpose  
+    ((C1[sx][0]*C1[sx][0]+C1[sx][1]*C1[sx][1])/10)+h[sx][0][0],   // "/100" for visualization purpose
     ((C2[sx][0]*C2[sx][0]+C2[sx][1]*C2[sx][1])/10)+h[sx][1][1]);
  }
 
